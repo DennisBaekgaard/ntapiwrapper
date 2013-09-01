@@ -464,7 +464,52 @@ class User extends NordicT
 		
 	}
 
+	/**
+	 * @abstract Send a Private Message to another user on Nordic-T.
+	 * @param $receiver : int - the userId of the receiver.
+	 * @param $text : the message
+	 * @param $save : true/false, save to your own inbox.	 
+	 */
+	public function sendPm($receiver, $text, $save = true)
+	{
+		$data = array(
+			'token' => $this->token
+		);
+		
+		$postfields = array(
+			'receiver' => $receiver,
+			'msg' => $text,
+			'saveInOutbox'	=> $save
+		);
+		
+		$options = array(
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_BINARYTRANSFER => true,
+			CURLOPT_FAILONERROR => false,
+			CURLOPT_POST => true,
+			CURLOPT_POSTFIELDS => http_build_query($postfields),
+			CURLOPT_URL =>  $this->api_url . 'privatemessages/?'. http_build_query($data)
+		);
+
+		$result = $this->runCurl($options);		
+		
+		if($result)
+		{
+			//Note: this can be expanded upon to receive information, however, for now it's only relevant (I think) if the PM has been sent or not, at least from an API perspective.
+			$data = json_decode($result, true); 
+			
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
 	
+	/**
+	 * @abstract Gets a post by the postID.
+	 * @param id : post id	 
+	 */
 	public function getPostById($id)
 	{
 		$data = array(
@@ -485,7 +530,37 @@ class User extends NordicT
 			
 			if($data['result'] == "true")
 			{
-				var_dump($data);
+				return new Post($data['data']['id'], 
+									$data['data']['body'], 
+									$data['data']['postingAppId'], 
+									$data['data']['topicid'], 
+									null, 
+									$data['data']['added'], 
+									$data['data']['forumid'], 
+									$data['data']['editedat'], 
+									$data['data']['likes'], 
+									$data['data']['editedby'], 
+									new User($data['data']['user']['username'],
+												null,
+												$data['data']['user']['userId'],
+												null,
+												null,
+												$data['data']['user']['enabled'],
+												$data['data']['user']['joindate'],
+												$data['data']['user']['isAdultAvatar'],
+												$data['data']['user']['warned'],
+												$data['data']['user']['class'],
+												$data['data']['user']['avatar'],
+												$data['data']['user']['country'],
+												$data['data']['user']['showNswfAvatar'],/*Spelling mistake not by me :p*/
+												$data['data']['user']['title'],
+												$data['data']['user']['friends'],
+												$data['data']['user']['donor'],
+												$data['data']['user']['likes'],
+												$data['data']['user']['age'],
+												$data['data']['user']['gender'])
+				);
+				
 			}
 			else
 			{

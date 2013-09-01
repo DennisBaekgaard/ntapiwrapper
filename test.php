@@ -31,8 +31,6 @@ else
 $user->populateUserFieldsFromAPI();
 
 
-//$post = $user->getLatestUserPost();
-
+$user->sendPM(238761, "test test test");
 //var_dump($user);
-
 ?>
