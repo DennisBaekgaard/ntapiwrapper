@@ -31,6 +31,6 @@ else
 $user->populateUserFieldsFromAPI();
 
 
-$user->sendPM(238761, "test test test");
+$user->sendPM(1337, "test test test");
 //var_dump($user);
 ?>
