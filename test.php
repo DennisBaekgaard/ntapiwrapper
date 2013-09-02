@@ -31,6 +31,7 @@ else
 $user->populateUserFieldsFromAPI();
 
 
-$user->sendPM(1337, "test test test");
+$pms = $user->getPrivateMessages();
+var_dump($pms);
 //var_dump($user);
 ?>

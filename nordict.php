@@ -19,8 +19,8 @@ class NordicT
 	*/
 
 	//SETUP CHANGE THESE FIELDS
-	private $application_id = '1012';
-	private $secret_key 	= 'secret';
+	private $application_id = 'secret';
+	private $app_key 	= 'secret';
 
 
 
@@ -81,7 +81,7 @@ class NordicT
 	public function aquireToken()
 	{
 		//signed key used in the API
-		$signed = sha1($this->secret_key . $this->application_id . $this->user->getUserName());
+		$signed = sha1($this->app_key . $this->application_id . $this->user->getUserName());
 		
 		//array to create the query to the API
 		$data = array('username' => $this->user->getUsername(), 'appId' => $this->application_id, 'signed' => $signed);
@@ -117,6 +117,19 @@ class NordicT
 		}
 		else
 			return false;
+	}
+	
+	/**
+	 * Very often a user entity is sent as part of a data return (post, pm, etc etc) 
+	 * I am not sure if the user is always worth saving, however, the simple thing is just to do it so it's available if it's needed.
+	 * @abstract Helper function. This function will instantiate a user from the user-information-array. Simply saves time and make use of code-reuseability (WE LIKE THAT!)
+	 * @param user_data : the entire user data information array.	 
+	 */
+	protected function createUserFromJSON($user_data)
+	{
+		
+		return new User($user_data->username, null, $user_data->userId, null, null, $user_data->enabled, $user_data->joindate, $user_data->isAdultAvatar, $user_data->warned, $user_data->class , $user_data->avatar, (array)$user_data->country, $user_data->showNswfAvatar, $user_data->title, (array) $user_data->friends, $user_data->donor, $user_data->likes, $user_data->age, $user_data->gender);		
+		
 	}
 	
 }

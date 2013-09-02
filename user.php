@@ -4,17 +4,18 @@
 * Created By: Dennis Bækgaard @ Tquila Nordic-T.me
 * Date: 30/08 - 2013
 * Class: user
-* Description: This class holds information about the user who's token has been aquired. 
+* Description: This class holds information about the user. 
 * It also holds information with regards to token status, expiration and so forth.
-* Further all user-related API specifik actions are in this class, such as getting PMs, posts and so on.
+* Further all user-related API specific actions are in this class, such as getting PMs, posts and so on.
 * 
-* Note: All curl/api values are available in classes that extend the core class NordicT
+* 
 * 
 * Note: this user class may be of two types.
 * 1) The user is using an app, and hence has a token and relations to the API.
 * 2) The user is not using an app, and hence has no tokens and relations to the API (e.g. if it's a saved user from a post ID or something like that).
 */
 require_once("post.php");
+require_once("privatemessage.php");
 class User extends NordicT
 {
 	/**
@@ -52,6 +53,7 @@ class User extends NordicT
 	public function __construct($username, $token = null, $user_id = null, $token_expiration = null, $token_status = null, $is_enabled = null, $join_date = null, $is_adult_avatar = null, 
 									$is_warned = null, $user_class = null, $avatar_url = null, $country = null, $show_nswf_avatar = null, $title = null, $friends = array(), $donor = null, $likes = 0, $age = null, $gender = null)
 	{
+		
 
 		$this->setUsername($username);
 		$this->setUserId($user_id);
@@ -214,6 +216,12 @@ class User extends NordicT
 	
 	public function setCountry($val)
 	{
+		
+		if(count($val) < 1)
+		{
+			$val = null;
+		}
+		
 		if(!is_null($val))
 		{
 			
@@ -291,6 +299,7 @@ class User extends NordicT
 	
 	public function setLikes($val)
 	{
+		
 		if(is_int($val))
 			$this->likes = $val;
 		else
@@ -333,7 +342,7 @@ class User extends NordicT
 	#endregion
 	
 	/**
-	 * Function restores the entire users information from the API. If you have saved the userinformation to your own database, it is not needed to repopulate it, but
+	 * @abstract Function restores the entire users information from the API. If you have saved the userinformation to your own database, it is not needed to repopulate it, but
 	 * if you just restore a user from token/username this is needed. It can be run autonomously if setting has been set to do so.	 
 	 */
 	public function populateUserFieldsFromAPI()
@@ -462,6 +471,57 @@ class User extends NordicT
 		else
 			return false;
 		
+	}
+
+	/**
+	 * @abstract Function retrieves a finite amount of private messages from the user
+	 * @param offset : 0 by default, can be anything.
+	 * @param limit : 5 by default, can be set to anything
+	 * @param folder : the folder which to retrive messages from. 'inbox' by default
+	 * @return an array of @see PrivateMessage 	 
+	 */
+	public function getPrivateMessages($offset = 0, $limit = 5, $folder = 'inbox')
+	{
+		$data = array(
+			'token' => $this->token,
+			'offset' => $offset,
+			'limit' => $limit
+		);
+		
+		$options = array(
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_BINARYTRANSFER => true,
+			CURLOPT_FAILONERROR => false,
+			CURLOPT_POST => false,
+			CURLOPT_URL =>  $this->api_url . 'privatemessages/'. $folder . '?' . http_build_query($data)
+		);
+		
+		
+		$result = $this->runCurl($options);
+		
+		if($result)
+		{
+			$data = json_decode($result);
+			
+			$private_messages_array = array();
+			foreach($data->data as $pm)
+			{
+				//In case it's a PM from the system (like helpdesk) we have to create a standard user, because the "system" has no user data.
+				if($pm->senderId == 0)
+					$sender = new User("System", null, 0);
+				else
+					$sender = $this->createUserFromJSON($pm->senderuser);
+				
+				$receiver = $this->createUserFromJSON($pm->receiveruser);
+				
+				
+				$privateMessage = new PrivateMessage($pm->canReply, $pm->id, $pm->content, $pm->folder, $pm->added, $receiver, $pm->read, $sender);
+				
+				array_push($private_messages_array, $privateMessage);
+			}
+			
+			return $private_messages_array;
+		}
 	}
 
 	/**
